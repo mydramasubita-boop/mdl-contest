@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>My Drama Life — Contest Compleanno</title>
+<link rel="stylesheet" href="shared/styles.css">
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <div class="brand">My Drama Life · Contest Compleanno</div>
+    <h1 class="title">Caccia al Tesoro</h1>
+  </div>
+
+  <div class="card">
+    <div class="tab-switch">
+      <button class="tab-btn active" id="tabLogin" onclick="switchTab('login')">Accedi</button>
+      <button class="tab-btn" id="tabRegister" onclick="switchTab('register')">Registrati</button>
+    </div>
+
+    <div id="formArea">
+      <label class="field-label">Nickname</label>
+      <input type="text" class="field-input" id="nicknameInput" placeholder="Il tuo nickname univoco">
+
+      <label class="field-label">Password</label>
+      <input type="password" class="field-input" id="passwordInput" placeholder="Almeno 6 caratteri">
+
+      <p class="error-text" id="errorText"></p>
+
+      <button class="btn" id="submitBtn" onclick="handleSubmit()">Accedi</button>
+    </div>
+  </div>
+
+  <p style="text-align:center; color:var(--dim); font-size:12px; padding:0 24px;">
+    Nessuna email richiesta — solo nickname e password, usati esclusivamente per il contest.
+  </p>
+</div>
+
+<!-- Firebase SDK (versione "compat", niente build step necessario) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="shared/firebase-config.js"></script>
+<script src="shared/auth.js"></script>
+<script>
+let currentTab = 'login';
+
+function switchTab(tab){
+  currentTab = tab;
+  document.getElementById('tabLogin').classList.toggle('active', tab === 'login');
+  document.getElementById('tabRegister').classList.toggle('active', tab === 'register');
+  document.getElementById('submitBtn').textContent = tab === 'login' ? 'Accedi' : 'Crea account';
+  hideError();
+}
+
+function showError(msg){
+  const el = document.getElementById('errorText');
+  el.textContent = msg;
+  el.classList.add('show');
+}
+function hideError(){
+  document.getElementById('errorText').classList.remove('show');
+}
+
+async function handleSubmit(){
+  hideError();
+  const nickname = document.getElementById('nicknameInput').value;
+  const password = document.getElementById('passwordInput').value;
+
+  if(!nickname || !password){
+    showError("Inserisci nickname e password.");
+    return;
+  }
+
+  document.getElementById('submitBtn').disabled = true;
+
+  const result = currentTab === 'login'
+    ? await loginUser(nickname, password)
+    : await registerUser(nickname, password);
+
+  document.getElementById('submitBtn').disabled = false;
+
+  if(!result.success){
+    showError(result.error);
+    return;
+  }
+
+  window.location.href = "dashboard.html";
+}
+
+// Se l'utente è già loggato, vai direttamente alla dashboard
+waitForAuthState().then((user) => {
+  if(user) window.location.href = "dashboard.html";
+});
+</script>
+</body>
+</html>

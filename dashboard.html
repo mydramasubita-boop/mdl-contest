@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>My Drama Life — La tua area contest</title>
+<link rel="stylesheet" href="shared/styles.css">
+<style>
+  .points-display{
+    text-align: center;
+    font-size: 44px;
+    font-weight: 900;
+    color: var(--gold);
+    line-height: 1;
+  }
+  .points-display span{
+    display: block;
+    font-size: 13px;
+    color: var(--dim);
+    font-weight: 600;
+    margin-top: 4px;
+  }
+  .pieces-grid{
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 14px;
+  }
+  .piece-chip{
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(242,3,111,0.3);
+    border-radius: 10px;
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+  .piece-chip.missing{
+    color: var(--dim);
+    border-style: dashed;
+    opacity: 0.5;
+  }
+  .mission-list{
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .mission-row{
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 14px;
+    background: rgba(255,255,255,0.03);
+    border-radius: 10px;
+    font-size: 13.5px;
+  }
+  .status-badge{
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 999px;
+  }
+  .status-badge.done{ background: rgba(43,224,138,0.15); color: var(--ok); }
+  .status-badge.missed{ background: rgba(255,85,102,0.15); color: var(--bad); }
+  .status-badge.locked{ background: rgba(185,173,194,0.1); color: var(--dim); }
+  .status-badge.today{ background: rgba(255,209,102,0.15); color: var(--gold); }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <div class="brand">My Drama Life · Contest Compleanno</div>
+    <h1 class="title">La tua area</h1>
+  </div>
+
+  <div class="card">
+    <div class="points-display" id="pointsDisplay">-<span>PUNTI TOTALI</span></div>
+  </div>
+
+  <div class="card">
+    <div class="field-label">PEZZI DI FRASE RACCOLTI</div>
+    <div class="pieces-grid" id="piecesGrid"></div>
+  </div>
+
+  <div class="card">
+    <div class="field-label">MISSIONI</div>
+    <div class="mission-list" id="missionList"></div>
+  </div>
+
+  <button class="btn-secondary" onclick="handleLogout()">Esci</button>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="shared/firebase-config.js"></script>
+<script src="shared/auth.js"></script>
+<script src="shared/mission-gate.js"></script>
+<script src="shared/submit-score.js"></script>
+<script>
+const MISSIONS = [
+  { day: 1, key: "day1_fotopuzzle", label: "Fotopuzzle" },
+  { day: 2, key: "day2_quiz", label: "Quiz / Trivia" },
+  { day: 3, key: "day3_rebus", label: "Rebus" },
+  { day: 4, key: "day4_memory", label: "Memory" },
+  { day: 5, key: "day5_cifrario", label: "Cifrario" },
+  { day: 6, key: "day6_countdown", label: "Countdown Arcade" },
+  { day: 7, key: "day7_ruota", label: "Ruota della Fortuna" },
+  { day: 7, key: "day7_quizzone", label: "Quizzone Finale" },
+];
+
+async function init(){
+  const user = await requireAuth();
+  if(!user) return;
+
+  const progress = await getUserProgress(user.uid);
+  const config = await getContestConfig();
+  const currentDay = computeContestDay(config.startDate);
+
+  document.getElementById('pointsDisplay').innerHTML =
+    (progress.totalPoints || 0) + '<span>PUNTI TOTALI</span>';
+
+  renderPieces(progress.collectedPieces || {});
+  renderMissions(progress.missionResults || {}, currentDay);
+}
+
+function renderPieces(collectedPieces){
+  const grid = document.getElementById('piecesGrid');
+  const dayKeys = ["day1_fotopuzzle","day2_quiz","day3_rebus","day4_memory","day5_cifrario","day6_countdown","day7_ruota"];
+  let html = '';
+  dayKeys.forEach((key, i) => {
+    const piece = collectedPieces[key];
+    if(piece){
+      html += `<div class="piece-chip">${piece}</div>`;
+    } else {
+      html += `<div class="piece-chip missing">Pezzo ${i+1} mancante</div>`;
+    }
+  });
+  grid.innerHTML = html;
+}
+
+function renderMissions(missionResults, currentDay){
+  const list = document.getElementById('missionList');
+  let html = '';
+  MISSIONS.forEach(m => {
+    const result = missionResults[m.key];
+    let badge, badgeClass;
+
+    if(result && result.completed){
+      badge = `${result.points} pt`;
+      badgeClass = 'done';
+    } else if(m.day < currentDay){
+      badge = 'Saltata';
+      badgeClass = 'missed';
+    } else if(m.day === currentDay){
+      badge = 'Oggi!';
+      badgeClass = 'today';
+    } else {
+      badge = 'Bloccata';
+      badgeClass = 'locked';
+    }
+
+    html += `<div class="mission-row">
+      <div>Giorno ${m.day} — ${m.label}</div>
+      <div class="status-badge ${badgeClass}">${badge}</div>
+    </div>`;
+  });
+  list.innerHTML = html;
+}
+
+function handleLogout(){
+  logoutUser().then(() => window.location.href = "index.html");
+}
+
+init();
+</script>
+</body>
+</html>

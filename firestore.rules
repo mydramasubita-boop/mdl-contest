@@ -1,0 +1,47 @@
+rules_version = '2';
+
+// ============================================================
+// FIRESTORE SECURITY RULES — Contest Compleanno My Drama Life
+// ============================================================
+// NB: questa è la versione "snella" descritta nel documento di
+// architettura — il client scrive direttamente i propri risultati
+// (users/{uid}.missionResults), quindi tecnicamente un utente
+// smaliziato potrebbe alterare il proprio punteggio dal browser.
+// Per la versione "sicura" servirebbe spostare le scritture in
+// missionResults dentro una Cloud Function e negare qui la
+// scrittura diretta lato client.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Chiunque autenticato può leggere il proprio documento utente,
+    // e SOLO il proprio (non quello di altri utenti).
+    match /users/{userId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Nicknames: lettura pubblica (per controllare unicità in fase di
+    // registrazione), scrittura solo per creare il proprio nickname.
+    match /nicknames/{nickname} {
+      allow read: if true;
+      allow create: if request.auth != null
+                    && request.resource.data.uid == request.auth.uid;
+      allow update, delete: if false;
+    }
+
+    // Contenuti delle missioni: solo lettura per tutti gli utenti
+    // autenticati, nessuna scrittura dal client (si aggiornano
+    // manualmente dalla console Firebase o da uno script di seed).
+    match /missionContent/{day} {
+      allow read: if request.auth != null;
+      allow write: if false;
+    }
+
+    // Configurazione generale del contest: solo lettura.
+    match /contestConfig/{doc} {
+      allow read: if request.auth != null;
+      allow write: if false;
+    }
+  }
+}
