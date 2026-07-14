@@ -7,10 +7,13 @@ Repository del sito per la caccia al tesoro del compleanno di My Drama Life Fans
 - `index.html` — login/registrazione (nickname + password)
 - `dashboard.html` — area personale utente (punti totali, pezzi raccolti, stato missioni)
 - `shared/` — moduli condivisi (autenticazione, Firestore, controllo giorno)
-- `missioni/day6_countdown.html` — **missione pilota completamente cablata** a Firebase (autenticazione, controllo giorno, invio punteggio reale)
-- `missioni/day6_countdown_STANDALONE_BACKUP.html` — la versione originale del prototipo, senza Firebase, tenuta come riferimento
+- `missioni/day6_countdown.html` — missione pilota cablata a Firebase (Countdown Arcade)
+- `missioni/day1_fotopuzzle.html` — seconda missione cablata (Fotopuzzle, con le 11 foto vere in `assets/img/fotopuzzle/`)
+- `missioni/_backups/` — le versioni originali standalone dei prototipi, tenute come riferimento
+- `assets/img/logo-md.png` — il logo reale usato nel Countdown Arcade
+- `assets/img/fotopuzzle/` — le 11 foto per il Fotopuzzle
 - `firestore.rules` — regole di sicurezza Firestore
-- Tutti gli altri prototipi delle missioni (Fotopuzzle, Quiz, Rebus, Memory, Cifrario, Ruota, Quizzone Finale) sono ancora nella loro forma standalone e vanno cablati allo stesso modo di `day6_countdown.html` quando siete pronti
+- Le altre 5 missioni (Quiz, Rebus, Memory, Cifrario, Ruota, Quizzone Finale) sono ancora nella loro forma standalone e vanno cablate allo stesso modo quando siete pronti
 
 ## Setup — passo per passo
 
