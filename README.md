@@ -4,16 +4,27 @@ Repository del sito per la caccia al tesoro del compleanno di My Drama Life Fans
 
 ## Cosa c'è già pronto
 
+**Tutte le 8 missioni sono cablate a Firebase** (login → controllo giorno → gioco → invio punteggio reale):
+
+- `missioni/day1_fotopuzzle.html` — Fotopuzzle (con le 11 foto vere in `assets/img/fotopuzzle/`)
+- `missioni/day2_quiz.html` — Quiz/Trivia
+- `missioni/day4_memory.html` — Memory
+- `missioni/day5_cifrario.html` — Cifrario
+- `missioni/day6_countdown.html` — Countdown Arcade
+- `missioni/day7_ruota.html` — Ruota della Fortuna
+- `missioni/day7_quizzone.html` — Quizzone Finale (determina anche il vincitore del contest, campo `quizzoneStatus`)
+- `missioni/_backups/` — le versioni originali standalone dei prototipi, tenute come riferimento
+
+**Manca solo il Rebus (giorno 3)**: per questa missione avevamo prodotto solo le immagini dei rebus, non un prototipo HTML interattivo — va costruito da zero quando siete pronti, seguendo lo stesso schema delle altre.
+
 - `index.html` — login/registrazione (nickname + password)
 - `dashboard.html` — area personale utente (punti totali, pezzi raccolti, stato missioni)
 - `shared/` — moduli condivisi (autenticazione, Firestore, controllo giorno)
-- `missioni/day6_countdown.html` — missione pilota cablata a Firebase (Countdown Arcade)
-- `missioni/day1_fotopuzzle.html` — seconda missione cablata (Fotopuzzle, con le 11 foto vere in `assets/img/fotopuzzle/`)
-- `missioni/_backups/` — le versioni originali standalone dei prototipi, tenute come riferimento
 - `assets/img/logo-md.png` — il logo reale usato nel Countdown Arcade
 - `assets/img/fotopuzzle/` — le 11 foto per il Fotopuzzle
 - `firestore.rules` — regole di sicurezza Firestore
-- Le altre 5 missioni (Quiz, Rebus, Memory, Cifrario, Ruota, Quizzone Finale) sono ancora nella loro forma standalone e vanno cablate allo stesso modo quando siete pronti
+
+**Nota importante**: in ogni missione, il campo `phrasePiece` (il pezzo di frase che dovrebbe alimentare il Quizzone Finale) è ancora un segnaposto (`null`). Va sostituito con il vero frammento assegnato a quel giorno/variante quando decidete la mappatura finale tra le 7 missioni e le 10 citazioni del Quizzone.
 
 ## Setup — passo per passo
 
