@@ -4,18 +4,17 @@ Repository del sito per la caccia al tesoro del compleanno di My Drama Life Fans
 
 ## Cosa c'è già pronto
 
-**Tutte le 8 missioni sono cablate a Firebase** (login → controllo giorno → gioco → invio punteggio reale):
+**Tutte le 8 missioni sono pronte e cablate a Firebase** (login → controllo giorno → gioco → invio punteggio reale):
 
 - `missioni/day1_fotopuzzle.html` — Fotopuzzle (con le 11 foto vere in `assets/img/fotopuzzle/`)
 - `missioni/day2_quiz.html` — Quiz/Trivia
+- `missioni/day3_rebus.html` — Rebus (7 varianti, immagini vere incorporate, 3 tentativi)
 - `missioni/day4_memory.html` — Memory
 - `missioni/day5_cifrario.html` — Cifrario
 - `missioni/day6_countdown.html` — Countdown Arcade
 - `missioni/day7_ruota.html` — Ruota della Fortuna
 - `missioni/day7_quizzone.html` — Quizzone Finale (determina anche il vincitore del contest, campo `quizzoneStatus`)
 - `missioni/_backups/` — le versioni originali standalone dei prototipi, tenute come riferimento
-
-**Manca solo il Rebus (giorno 3)**: per questa missione avevamo prodotto solo le immagini dei rebus, non un prototipo HTML interattivo — va costruito da zero quando siete pronti, seguendo lo stesso schema delle altre.
 
 - `index.html` — login/registrazione (nickname + password)
 - `dashboard.html` — area personale utente (punti totali, pezzi raccolti, stato missioni)
