@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>My Drama Life — Classifica Admin</title>
+<link rel="stylesheet" href="shared/styles.css">
+<style>
+  .app{ max-width: 720px; }
+  table{
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13.5px;
+  }
+  th, td{
+    padding: 10px 8px;
+    text-align: left;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  th{
+    color: var(--dim);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 700;
+  }
+  tr.winner{
+    background: rgba(255,209,102,0.08);
+  }
+  tr.winner td:first-child{
+    color: var(--gold);
+    font-weight: 800;
+  }
+  .rank-badge{
+    display:inline-block;
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: rgba(242,3,111,0.15);
+    color: var(--pink-glow);
+    font-size: 11px;
+    font-weight: 800;
+    text-align:center;
+    line-height: 22px;
+  }
+  tr.winner .rank-badge{
+    background: var(--gold);
+    color: #3a2a00;
+  }
+  .section-title{
+    font-size: 12px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--pink-glow);
+    font-weight: 700;
+    margin: 24px 18px 8px;
+  }
+  .empty-note{
+    color: var(--dim);
+    font-size: 13px;
+    padding: 8px 18px;
+  }
+  .denied{
+    text-align:center;
+    padding: 60px 24px;
+    color: var(--dim);
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <div class="brand">My Drama Life · Area riservata</div>
+    <h1 class="title">Classifica Contest (Admin)</h1>
+  </div>
+
+  <div id="content">
+    <div class="card" style="text-align:center;">Verifica permessi in corso...</div>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="shared/firebase-config.js"></script>
+<script src="shared/auth.js"></script>
+
+<script>
+async function init(){
+  const user = await requireAuth();
+  if(!user) return;
+
+  const doc = await db.collection('users').doc(user.uid).get();
+  const data = doc.data();
+
+  if(!data || !data.isAdmin){
+    document.getElementById('content').innerHTML = `
+      <div class="denied">
+        <h2>Accesso negato</h2>
+        <p>Questa pagina è riservata allo staff.</p>
+      </div>
+    `;
+    return;
+  }
+
+  await loadLeaderboard();
+}
+
+async function loadLeaderboard(){
+  const snapshot = await db.collection('users').get();
+  const users = [];
+  snapshot.forEach(doc => {
+    const d = doc.data();
+    users.push({
+      uid: doc.id,
+      nickname: d.nickname || '(senza nome)',
+      totalPoints: d.totalPoints || 0,
+      quizzoneStatus: d.quizzoneStatus || 'not_started',
+      quizzoneCompletedAt: d.missionResults && d.missionResults['day7_quizzone']
+        ? d.missionResults['day7_quizzone'].completedAt
+        : null,
+      isAdmin: !!d.isAdmin
+    });
+  });
+
+  // Escludiamo gli account admin/test dalla classifica
+  const realUsers = users.filter(u => !u.isAdmin);
+
+  const winners = realUsers.filter(u => u.quizzoneStatus === 'won');
+  const others = realUsers.filter(u => u.quizzoneStatus !== 'won');
+
+  // Ordina i vincitori: punti totali desc, poi chi ha risolto il Quizzone prima (timestamp asc)
+  winners.sort((a, b) => {
+    if(b.totalPoints !== a.totalPoints) return b.totalPoints - a.totalPoints;
+    const aTime = a.quizzoneCompletedAt ? a.quizzoneCompletedAt.toMillis() : Infinity;
+    const bTime = b.quizzoneCompletedAt ? b.quizzoneCompletedAt.toMillis() : Infinity;
+    return aTime - bTime;
+  });
+
+  others.sort((a, b) => b.totalPoints - a.totalPoints);
+
+  let html = '';
+
+  html += `<div class="section-title">Hanno risolto il Quizzone (${winners.length})</div>`;
+  if(winners.length === 0){
+    html += `<p class="empty-note">Nessuno ha ancora risolto il Quizzone Finale.</p>`;
+  } else {
+    html += `<div class="card"><table><thead><tr><th>#</th><th>Nickname</th><th>Punti</th><th>Quizzone risolto il</th></tr></thead><tbody>`;
+    winners.forEach((u, i) => {
+      const dateStr = u.quizzoneCompletedAt
+        ? u.quizzoneCompletedAt.toDate().toLocaleString('it-IT')
+        : '—';
+      html += `<tr class="${i === 0 ? 'winner' : ''}">
+        <td><span class="rank-badge">${i + 1}</span></td>
+        <td>${u.nickname}</td>
+        <td>${u.totalPoints}</td>
+        <td>${dateStr}</td>
+      </tr>`;
+    });
+    html += `</tbody></table></div>`;
+    html += `<p class="empty-note">Il vincitore ufficiale (evidenziato in oro) è il primo della lista. In caso di parità di punti, vince chi ha risolto il Quizzone prima.</p>`;
+  }
+
+  html += `<div class="section-title">Altri partecipanti (${others.length})</div>`;
+  if(others.length === 0){
+    html += `<p class="empty-note">Nessun altro partecipante registrato.</p>`;
+  } else {
+    html += `<div class="card"><table><thead><tr><th>#</th><th>Nickname</th><th>Punti</th><th>Stato Quizzone</th></tr></thead><tbody>`;
+    others.forEach((u, i) => {
+      html += `<tr>
+        <td><span class="rank-badge">${i + 1}</span></td>
+        <td>${u.nickname}</td>
+        <td>${u.totalPoints}</td>
+        <td>${u.quizzoneStatus === 'lost' ? 'Quizzone fallito' : 'Non ancora tentato'}</td>
+      </tr>`;
+    });
+    html += `</tbody></table></div>`;
+  }
+
+  document.getElementById('content').innerHTML = html;
+}
+
+init();
+</script>
+</body>
+</html>
