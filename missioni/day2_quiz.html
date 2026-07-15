@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>My Drama Life — Quiz</title>
+<style>
+  :root{
+    --bg: #0a0708;
+    --bg-soft: #16111a;
+    --pink: #f2036f;
+    --pink-glow: #ff4fa3;
+    --gold: #ffd166;
+    --white: #ffffff;
+    --dim: #b9adc2;
+    --ok: #2be08a;
+    --bad: #ff5566;
+  }
+  *{box-sizing:border-box;}
+  html,body{
+    margin:0; padding:0; min-height:100%;
+    background: radial-gradient(circle at 50% 0%, #201524 0%, var(--bg) 60%);
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    color: var(--white);
+    -webkit-tap-highlight-color: transparent;
+    user-select:none;
+  }
+  .app{
+    max-width: 480px;
+    margin: 0 auto;
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    padding-bottom: 24px;
+  }
+  .header{
+    padding: 14px 18px 8px;
+    text-align:center;
+    border-bottom: 1px solid rgba(242,3,111,0.25);
+    background: linear-gradient(180deg, rgba(242,3,111,0.10), transparent);
+  }
+  .brand{
+    font-size: 11px;
+    letter-spacing: 3px;
+    color: var(--pink-glow);
+    text-transform: uppercase;
+    margin-bottom: 2px;
+    font-weight: 600;
+  }
+  .title{
+    font-size: 20px;
+    font-weight: 800;
+    margin:0;
+    background: linear-gradient(90deg, #fff, var(--pink-glow));
+    -webkit-background-clip: text;
+    background-clip:text;
+    color: transparent;
+    letter-spacing: 0.5px;
+  }
+  .hud{
+    display:flex;
+    justify-content: space-between;
+    align-items:center;
+    padding: 12px 18px 6px;
+    font-size: 12.5px;
+    color: var(--dim);
+  }
+  .hud b{ color: var(--gold); font-size:16px; }
+  .timerbar-wrap{
+    height: 6px;
+    margin: 0 18px 16px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 6px;
+    overflow:hidden;
+  }
+  .timerbar{
+    height:100%;
+    width:100%;
+    background: linear-gradient(90deg, var(--pink), var(--gold));
+    transition: width 0.2s linear;
+  }
+
+  .quiz-body{
+    flex:1;
+    padding: 0 18px;
+    display:flex;
+    flex-direction:column;
+  }
+  .question-card{
+    background: var(--bg-soft);
+    border: 1px solid rgba(242,3,111,0.25);
+    border-radius: 16px;
+    padding: 18px;
+  }
+  .q-meta{
+    font-size: 15px;
+    color: var(--pink-glow);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    font-weight:800;
+  }
+  .q-text{
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 1.4;
+    margin-bottom: 16px;
+  }
+  .option{
+    display:flex;
+    align-items:center;
+    gap: 10px;
+    padding: 13px 14px;
+    border-radius: 12px;
+    border: 1.5px solid rgba(185,173,194,0.25);
+    margin-bottom: 10px;
+    cursor:pointer;
+    font-size: 14.5px;
+    transition: all 0.15s ease;
+  }
+  .option:hover{ border-color: rgba(242,3,111,0.5); }
+  .option.selected{
+    border-color: var(--pink-glow);
+    background: rgba(242,3,111,0.15);
+    box-shadow: 0 0 12px rgba(242,3,111,0.3);
+  }
+  .option-letter{
+    width: 26px; height:26px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.08);
+    display:flex; align-items:center; justify-content:center;
+    font-weight:800;
+    font-size: 12.5px;
+    flex-shrink:0;
+  }
+  .option.selected .option-letter{
+    background: var(--pink-glow);
+    color: #1a0510;
+  }
+
+  .confirm-btn{
+    margin-top: 16px;
+    width:100%;
+    border:none;
+    padding: 14px;
+    border-radius: 999px;
+    font-size: 15px;
+    font-weight: 800;
+    cursor:pointer;
+    background: linear-gradient(90deg, var(--pink), #c2025a);
+    color: #fff;
+    box-shadow: 0 4px 20px rgba(242,3,111,0.45);
+    transition: opacity 0.2s ease;
+  }
+  .confirm-btn:disabled{ opacity:0.3; cursor:not-allowed; }
+
+  .progress-dots{
+    display:flex;
+    gap: 6px;
+    justify-content:center;
+    margin-top: 18px;
+  }
+  .dot{
+    width: 9px; height:9px;
+    border-radius:50%;
+    background: rgba(255,255,255,0.15);
+  }
+  .dot.done{ background: var(--ok); }
+  .dot.wrong{ background: var(--bad); }
+  .dot.current{ background: var(--gold); }
+
+  .overlay{
+    position:fixed; inset:0;
+    background: rgba(6,4,7,0.94);
+    display:flex; flex-direction:column;
+    align-items:center; justify-content:center;
+    text-align:center;
+    padding: 24px;
+    gap: 14px;
+    z-index: 20;
+  }
+  .overlay h2{
+    margin:0;
+    font-size: 22px;
+    background: linear-gradient(90deg, #fff, var(--pink-glow));
+    -webkit-background-clip: text; background-clip:text; color:transparent;
+  }
+  .overlay p{
+    margin:0;
+    color: var(--dim);
+    font-size: 13.5px;
+    line-height: 1.5;
+    max-width: 320px;
+  }
+  .diff-choice{
+    display:flex;
+    gap: 14px;
+    margin-top: 8px;
+  }
+  .diff-btn{
+    border: 1.5px solid rgba(242,3,111,0.4);
+    background: var(--bg-soft);
+    color: var(--white);
+    padding: 16px 22px;
+    border-radius: 14px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor:pointer;
+    min-width: 130px;
+  }
+  .diff-btn .sub{
+    display:block;
+    font-size: 11px;
+    color: var(--dim);
+    font-weight: 500;
+    margin-top: 4px;
+  }
+  .diff-btn.easy:hover{ border-color: var(--ok); }
+  .diff-btn.hard:hover{ border-color: var(--gold); }
+
+  .final-panel{
+    background: var(--bg-soft);
+    border: 1px solid rgba(242,3,111,0.3);
+    border-radius: 16px;
+    padding: 20px;
+    text-align:center;
+  }
+  .final-score{
+    font-size: 42px;
+    font-weight: 900;
+    color: var(--gold);
+    line-height:1;
+  }
+  .final-score span{
+    font-size: 13px;
+    color: var(--dim);
+    font-weight:600;
+  }
+  .final-breakdown{
+    display:flex;
+    justify-content:center;
+    flex-wrap: wrap;
+    gap: 16px;
+    font-size: 11.5px;
+    color: var(--dim);
+    margin-top: 10px;
+  }
+  .final-breakdown b{ color: var(--white); display:block; font-size:14px; }
+  .confirm-final-btn{
+    margin-top: 16px;
+    border:none;
+    padding: 13px 26px;
+    border-radius: 999px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor:pointer;
+    background: linear-gradient(90deg, #2be08a, #159a5f);
+    color: #fff;
+    box-shadow: 0 4px 16px rgba(43,224,138,0.35);
+  }
+  .submitted-note{
+    margin-top: 10px;
+    color: var(--ok);
+    font-size: 13px;
+    font-weight:600;
+    display:none;
+  }
+  .submitted-note.show{ display:block; }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <div class="brand">My Drama Life · Missione Compleanno</div>
+    <h1 class="title">Quiz / Trivia</h1>
+  </div>
+
+  <div class="hud">
+    <div>Domanda <b id="qCounter">-</b> / 8</div>
+    <div id="timeDisplay">4:30</div>
+  </div>
+  <div class="timerbar-wrap"><div class="timerbar" id="timerbar"></div></div>
+
+  <div class="quiz-body" id="quizBody"></div>
+
+  <div class="overlay" id="startOverlay" style="display:none;">
+    <div class="brand">Missione 2</div>
+    <h2>Scegli il livello</h2>
+    <p>IL QUIZ SI BASA SUI PROGETTI PRESENTI NEL NOSTRO FANSUB.<br><br>Facile: solo curiosità su drama coreani.<br><br> Difficile: curiosità su film coreani, cina e giapponesi insieme, per veri esperti (bonus punti extra). La scelta va fatta ora, prima che parta il timer di 4:30.</p>
+    <div class="diff-choice">
+      <button class="diff-btn easy" onclick="chooseDifficulty('facile')">Facile<span class="sub">Solo Corea</span></button>
+      <button class="diff-btn hard" onclick="chooseDifficulty('difficile')">Difficile<span class="sub">Corea + Cina + Giappone</span></button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="gateOverlay">
+  <div class="brand">My Drama Life · Contest Compleanno</div>
+  <h2 id="gateMessage">Verifica in corso...</h2>
+  <p id="gateSubtext"></p>
+  <button class="btn" id="gateBackBtn" style="display:none;" onclick="window.location.href='../dashboard.html'">Torna alla tua area</button>
+</div>
+
+<!-- Firebase + moduli condivisi -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="../shared/firebase-config.js"></script>
+<script src="../shared/auth.js"></script>
+<script src="../shared/mission-gate.js"></script>
+<script src="../shared/submit-score.js"></script>
+
+<script>
+const MISSION_DAY = 2;
+const MISSION_KEY = "day2_quiz";
+let currentUser = null;
+
+async function initMissionGate(){
+  const user = await requireAuth();
+  if(!user) return;
+  currentUser = user;
+
+  const access = await checkMissionAccess(user.uid, MISSION_DAY, MISSION_KEY);
+
+  if(!access.canPlay){
+    document.getElementById('gateMessage').textContent = access.alreadyCompleted
+      ? "Missione già completata"
+      : "Missione non disponibile";
+    document.getElementById('gateSubtext').textContent = access.reason;
+    document.getElementById('gateBackBtn').style.display = 'inline-block';
+    return;
+  }
+
+  document.getElementById('gateOverlay').style.display = 'none';
+  document.getElementById('startOverlay').style.display = 'flex';
+}
+
+initMissionGate();
+</script>
+
+<script>
+const QUIZ_DATA = {"facile": [[{"n": 1, "titolo": "Moon Lovers: Scarlet Heart Ryeo", "domanda": "In che epoca è ambientata la storia?", "opzioni": ["Silla", "Goryeo", "Joseon"], "corretta": "B"}, {"n": 2, "titolo": "Goblin (Guardian: The Lonely and Great God)", "domanda": "Qual è la maledizione di Kim Shin?", "opzioni": ["Ha perso la memoria e per recuperarla deve lottare contro i demoni", "È invisibile agli altri e solo la nuova coinquilina di casa sua può vederlo", "È immortale, deve trovare la sposa umana per morire"], "corretta": "C"}, {"n": 3, "titolo": "The Scandal of Chun Hwa", "domanda": "Su cosa verte lo scandalo che coinvolge la principessa Hwa-ri?", "opzioni": ["Un furto alla corona", "Un matrimonio segreto", "Racconti erotici"], "corretta": "C"}, {"n": 4, "titolo": "Again My Life", "domanda": "Che professione ha il protagonista prima di tornare indietro nel tempo?", "opzioni": ["Poliziotto", "Pubblico ministero", "Avvocato"], "corretta": "B"}, {"n": 5, "titolo": "Wonderful World", "domanda": "Come muore il figlio della protagonista?", "opzioni": ["Per una grave malattia", "In un incidente domestico", "Investito da un'auto pirata"], "corretta": "C"}, {"n": 6, "titolo": "Coffee Prince", "domanda": "Perché Eun-chan viene assunta al bar, pur essendo una ragazza?", "opzioni": ["È la sorella del proprietario", "Si finge un ragazzo", "È la migliore barista della zona"], "corretta": "B"}, {"n": 7, "titolo": "Lovers of the Red Sky", "domanda": "Che ruolo ha il protagonista maschile Ha Ram?", "opzioni": ["Medico di corte", "Pittore di corte", "Astrologo di corte"], "corretta": "C"}, {"n": 8, "titolo": "True Beauty", "domanda": "Da cosa nasce l'insicurezza della protagonista?", "opzioni": ["Una scommessa persa", "Bullismo per il suo aspetto", "Una malattia"], "corretta": "B"}], [{"n": 1, "titolo": "True Beauty", "domanda": "Da cosa è tratto il drama?", "opzioni": ["Un romanzo", "Un film", "Un webtoon"], "corretta": "C"}, {"n": 2, "titolo": "Moon Lovers: Scarlet Heart Ryeo", "domanda": "Su quale opera cinese è ispirato il drama?", "opzioni": ["Nirvana in Fire", "Scarlet Heart", "Empresses in the Palace"], "corretta": "B"}, {"n": 3, "titolo": "Coffee Prince", "domanda": "In che anno è uscito il drama?", "opzioni": ["2011", "2016", "2007"], "corretta": "C"}, {"n": 4, "titolo": "The Scandal of Chun Hwa", "domanda": "Quanti episodi ha la serie?", "opzioni": ["16", "20", "10"], "corretta": "C"}, {"n": 5, "titolo": "Lovers of the Red Sky", "domanda": "Che professione vuole intraprendere la protagonista, nonostante fosse vietata alle donne?", "opzioni": ["Sciamana", "Medico di corte", "Pittrice di corte"], "corretta": "C"}, {"n": 6, "titolo": "Goblin (Guardian: The Lonely and Great God)", "domanda": "Cosa deve fare la sposa umana per liberare Kim Shin dalla maledizione?", "opzioni": ["Pronunciare il suo vero nome", "Estrarre la spada dal suo petto", "Spezzare un incantesimo con un bacio"], "corretta": "B"}, {"n": 7, "titolo": "Again My Life", "domanda": "Vero o Falso: il protagonista torna indietro fino ai suoi anni di liceo.", "opzioni": ["Vero", "Falso"], "corretta": "A"}, {"n": 8, "titolo": "Wonderful World", "domanda": "Che professione ha la protagonista?", "opzioni": ["Avvocata", "Insegnante", "Scrittrice"], "corretta": "C"}], [{"n": 1, "titolo": "Again My Life", "domanda": "Per quale motivo il protagonista viene ucciso, dando il via alla storia?", "opzioni": ["Per un incidente casuale", "Per gelosia", "Per aver scoperto una cospirazione/corruzione"], "corretta": "C"}, {"n": 2, "titolo": "Lovers of the Red Sky", "domanda": "Vero o Falso: è un drama storico ambientato nel periodo Joseon.", "opzioni": ["Vero", "Falso"], "corretta": "A"}, {"n": 3, "titolo": "Goblin (Guardian: The Lonely and Great God)", "domanda": "Vero o Falso: alcune scene sono state girate in Canada.", "opzioni": ["Vero", "Falso"], "corretta": "A"}, {"n": 4, "titolo": "Wonderful World", "domanda": "Vero o Falso: appartiene al genere thriller/drammatico con elementi di vendetta.", "opzioni": ["Vero", "Falso"], "corretta": "A"}, {"n": 5, "titolo": "Moon Lovers: Scarlet Heart Ryeo", "domanda": "Vero o Falso: la protagonista femminile è interpretata da IU.", "opzioni": ["Vero", "Falso"], "corretta": "A"}, {"n": 6, "titolo": "True Beauty", "domanda": "Di chi si innamora la sorella della protagonista?", "opzioni": ["Del padre di Su-ho", "Del vicino di casa", "Del professore della protagonista"], "corretta": "C"}, {"n": 7, "titolo": "The Scandal of Chun Hwa", "domanda": "Chi interpreta Choi Hwan, il ricco mercante?", "opzioni": ["Kang Chan-hee", "Son Woo-hyun", "Chang Ryul"], "corretta": "C"}, {"n": 8, "titolo": "Coffee Prince", "domanda": "Chi interpreta la protagonista Eun-chan?", "opzioni": ["Han Hyo-joo", "Moon Geun-young", "Yoon Eun-hye"], "corretta": "C"}], [{"n": 1, "titolo": "Coffee Prince", "domanda": "Chi interpreta il proprietario del bar, Choi Han-gyul?", "opzioni": ["So Ji-sub", "Gong Yoo", "Lee Joon-gi"], "corretta": "B"}, {"n": 2, "titolo": "Goblin (Guardian: The Lonely and Great God)", "domanda": "Chi interpreta il Mietitore (Grim Reaper)?", "opzioni": ["Gong Yoo", "Lee Dong-wook", "Ahn Hyo-seop"], "corretta": "B"}, {"n": 2, "titolo": "The Scandal of Chun Hwa", "domanda": "Nei primi minuti il drama in che epoca inizia?", "opzioni": ["Joseon", "Goryeo", "Moderna"], "corretta": "B"}, {"n": 3, "titolo": "True Beauty", "domanda": "Vero o Falso: è ambientato in un liceo.", "opzioni": ["Vero", "Falso"], "corretta": "A"}, {"n": 6, "titolo": "Wonderful World", "domanda": "Chi interpreta il co-protagonista maschile?", "opzioni": ["Kim Soo-hyun", "Ahn Hyo-seop", "Cha Eun-woo"], "corretta": "C"}, {"n": 7, "titolo": "Again My Life", "domanda": "Chi interpreta il protagonista principale?", "opzioni": ["Lee Joon-gi", "Ji Sung", "Namgoong Min"], "corretta": "A"}, {"n": 7, "titolo": "Moon Lovers: Scarlet Heart Ryeo", "domanda": "In che anno è andato in onda il drama?", "opzioni": ["2013", "2016", "2019"], "corretta": "B"}, {"n": 8, "titolo": "Lovers of the Red Sky", "domanda": "Chi interpreta il protagonista maschile Ha Ram?", "opzioni": ["Ahn Hyo-seop", "Nam Joo-hyuk", "Cha Eun-woo"], "corretta": "A"}], [{"n": 1, "titolo": "Wonderful World", "domanda": "Che lavoro fa il marito della protagonista?", "opzioni": ["Medico in prima linea", "Avvocato per i diritti internazionali", "Giornalista e conduttore di telegiornale"], "corretta": "C"}, {"n": 2, "titolo": "True Beauty", "domanda": "Chi interpreta il protagonista maschile?", "opzioni": ["Lee Min-ho", "Park Seo-joon", "Cha Eun-woo"], "corretta": "C"}, {"n": 3, "titolo": "Again My Life", "domanda": "Vero o Falso: il protagonista usa la nuova occasione per vendicarsi.", "opzioni": ["Vero", "Falso"], "corretta": "A"}, {"n": 4, "titolo": "Coffee Prince", "domanda": "Vero o Falso: è considerato uno dei drama pionieri del genere \"gender-bender\".", "opzioni": ["Vero", "Falso"], "corretta": "A"}, {"n": 5, "titolo": "The Scandal of Chun Hwa", "domanda": "Vero o Falso: la principessa decide di scegliere da sola il proprio marito.", "opzioni": ["Vero", "Falso"], "corretta": "A"}, {"n": 6, "titolo": "Lovers of the Red Sky", "domanda": "Di che colore ha gli occhi Ha Ram all'inizio?", "opzioni": ["Verde acqua", "Giallo chiaro", "Rosso rosati"], "corretta": "C"}, {"n": 7, "titolo": "Moon Lovers: Scarlet Heart Ryeo", "domanda": "Perché il protagonista maschile indossa una maschera?", "opzioni": ["Per non farsi riconoscere", "Per motivi religiosi", "Per nascondere una cicatrice sul volto"], "corretta": "C"}, {"n": 8, "titolo": "Goblin (Guardian: The Lonely and Great God)", "domanda": "La protagonista femminile come richiama a se il Goblin?", "opzioni": ["Usando un sigillo magico che ha trovato nel bosco", "Battendo le mani 3 volte con gli occhi chius", "Spegnendo una fiamma soffiandoci sopra"], "corretta": "C"}]], "difficile": [[{"n": 1, "titolo": "Spirits' Homecoming", "domanda": "Che tema storico tratta il film?", "opzioni": ["I morti nella guerra di Corea", "Le \"comfort women\" durante l'occupazione giapponese", "La dittatura militare imposta per anni in Corea"], "corretta": "B"}, {"n": 2, "titolo": "Always (film coreano, 2011)", "domanda": "Che disabilità ha la protagonista femminile?", "opzioni": ["È sorda", "È su una sedia a rotelle", "È non vedente"], "corretta": "C"}, {"n": 3, "titolo": "Usagi Drop", "domanda": "Che legame scopre il protagonista con la bambina Rin?", "opzioni": ["È la figlia illegittima di suo padre", "È la figlia illegittima di suo nonno", "È la figlia segreta della sua ex"], "corretta": "B"}, {"n": 4, "titolo": "Better Days", "domanda": "Di cosa è vittima la protagonista?", "opzioni": ["Un incidente stradale", "Una malattia terminale", "Bullismo scolastico"], "corretta": "C"}, {"n": 5, "titolo": "Nagisa ni Saku Hana", "domanda": "Dove si incontrano per la prima volta le protagoniste Ayaka e Nagisa?", "opzioni": ["In un ristorante di Tokyo", "In aeroporto", "Su una spiaggia a Isumi"], "corretta": "C"}, {"n": 6, "titolo": "Kokuho", "domanda": "Che forma d'arte tradizionale giapponese è al centro della storia?", "opzioni": ["Il sumo", "Il kabuki", "La cerimonia del tè"], "corretta": "B"}, {"n": 7, "titolo": "Hua Mulan (edizione Liu Chuxuan, 2020)", "domanda": "Chi interpreta Mulan nell'edizione rilasciata da My Drama Life?", "opzioni": ["Zhao Wei", "Zhang Ziyi", "Liu Chuxuan"], "corretta": "C"}, {"n": 8, "titolo": "Upcoming Summer", "domanda": "Perché la protagonista deve ripetere l'anno scolastico?", "opzioni": ["Si è trasferita", "È stata espulsa", "Ha fallito il gaokao"], "corretta": "C"}], [{"n": 1, "titolo": "Hua Mulan (edizione Liu Chuxuan, 2020)", "domanda": "Chi dirige il film?", "opzioni": ["Lee Sang-il", "Li Yuxi", "Chen Zhengdao"], "corretta": "B"}, {"n": 2, "titolo": "Nagisa ni Saku Hana", "domanda": "Di chi era il ristorante che le due protagoniste decidono di far ripartire?", "opzioni": ["Del nonno defunto di Nagisa", "Di un amico di Ayaka", "Dei genitori di Nagisa"], "corretta": "A"}, {"n": 3, "titolo": "Always (film coreano, 2011)", "domanda": "Chi interpreta il protagonista maschile, ex pugile?", "opzioni": ["Gong Yoo", "So Ji-sub", "Lee Joon-gi"], "corretta": "B"}, {"n": 4, "titolo": "Better Days", "domanda": "Chi interpreta la protagonista femminile?", "opzioni": ["Zhang Zifeng", "Zhou Dongyu", "Zhao Wei"], "corretta": "B"}, {"n": 5, "titolo": "Kokuho", "domanda": "Chi interpreta il protagonista Kikuo?", "opzioni": ["Ryusei Yokohama", "Ken Watanabe", "Ryo Yoshizawa"], "corretta": "C"}, {"n": 6, "titolo": "Spirits' Homecoming", "domanda": "Chi è il regista del film?", "opzioni": ["Cho Jung-rae", "Lee Kwang-young", "Bong Joon-ho"], "corretta": "A"}, {"n": 7, "titolo": "Upcoming Summer", "domanda": "Chi interpreta la protagonista Chen Chen?", "opzioni": ["Zhang Zifeng", "Ni Ni", "Zhou Dongyu"], "corretta": "A"}, {"n": 8, "titolo": "Usagi Drop", "domanda": "Da cosa è tratto il film?", "opzioni": ["Un romanzo", "Un manga", "Un videogioco"], "corretta": "B"}], [{"n": 1, "titolo": "Better Days", "domanda": "Per cosa si sta preparando la protagonista, nonostante il bullismo subito?", "opzioni": ["Un concorso di pittura", "L'esame di ammissione all'università (gaokao)", "Una gara sportiva"], "corretta": "B"}, {"n": 2, "titolo": "Upcoming Summer", "domanda": "Chi interpreta il protagonista Zheng Yuxing?", "opzioni": ["Leo Wu", "Jackson Yee", "Ryusei Yokohama"], "corretta": "A"}, {"n": 3, "titolo": "Kokuho", "domanda": "Da che famiglia proviene Kikuo, prima di essere adottato?", "opzioni": ["Una famiglia di samurai", "Una famiglia yakuza", "Una famiglia di mercanti"], "corretta": "B"}, {"n": 4, "titolo": "Hua Mulan (edizione Liu Chuxuan, 2020)", "domanda": "Al posto di chi si arruola Mulan nell'esercito?", "opzioni": ["Di suo fratello", "Di suo padre", "Di suo zio"], "corretta": "B"}, {"n": 5, "titolo": "Always (film coreano, 2011)", "domanda": "Chi interpreta la protagonista femminile?", "opzioni": ["Han Hyo-joo", "Kim Yoo-jung", "Moon Ga-young"], "corretta": "A"}, {"n": 6, "titolo": "Nagisa ni Saku Hana", "domanda": "Cosa cambia ogni giorno nel ristorante?", "opzioni": ["L'arredamento", "Il personale", "Il menù"], "corretta": "C"}, {"n": 7, "titolo": "Spirits' Homecoming", "domanda": "Che tipo di produzione ha avuto il film?", "opzioni": ["Finanziato tramite crowdfunding", "Prodotto da un grande studio hollywoodiano", "Autoprodotto interamente dal regista"], "corretta": "A"}, {"n": 8, "titolo": "Usagi Drop", "domanda": "Come si chiama la bambina protagonista?", "opzioni": ["Rin", "Ayaka", "Nagisa"], "corretta": "A"}], [{"n": 1, "titolo": "Usagi Drop", "domanda": "Vero o Falso: Rin non ha alcun legame di sangue con il protagonista.", "opzioni": ["Vero", "Falso"], "corretta": "B"}, {"n": 2, "titolo": "Hua Mulan (edizione Liu Chuxuan, 2020)", "domanda": "Vero o Falso: il film è una co-produzione tra due studi cinesi.", "opzioni": ["Vero", "Falso"], "corretta": "A"}, {"n": 3, "titolo": "Better Days", "domanda": "Chi interpreta il protagonista maschile?", "opzioni": ["Leo Wu", "Jackson Yee (Yi Yang Qianxi)", "Ryo Yoshizawa"], "corretta": "B"}, {"n": 4, "titolo": "Kokuho", "domanda": "In che città è ambientato l'inizio della storia?", "opzioni": ["Tokyo", "Kyoto", "Nagasaki"], "corretta": "C"}, {"n": 5, "titolo": "Spirits' Homecoming", "domanda": "In che periodo storico è ambientato il film?", "opzioni": ["L'occupazione giapponese della Corea, anni '40", "La guerra di Corea, anni '50", "La dittatura militare, anni '80"], "corretta": "A"}, {"n": 6, "titolo": "Upcoming Summer", "domanda": "Cosa scopre la protagonista sulla madre, che la sconvolge?", "opzioni": ["Una relazione tra la madre e lo zio Wang", "Che la madre è malata e sta per morire", "Che la madre vuole trasferirsi all'estero"], "corretta": "A"}, {"n": 7, "titolo": "Always (film coreano, 2011)", "domanda": "Che professione ha il protagonista maschile, prima della storia?", "opzioni": ["Attore", "Pugile", "Cantante"], "corretta": "B"}, {"n": 8, "titolo": "Nagisa ni Saku Hana", "domanda": "Da dove arriva Ayaka, prima di stabilirsi a Isumi?", "opzioni": ["Da un'azienda a Tokyo", "Da un'università", "Da un altro villaggio di pescatori"], "corretta": "A"}], [{"n": 1, "titolo": "Spirits' Homecoming", "domanda": "Su cosa si basa il film, secondo quanto dichiarato dagli autori?", "opzioni": ["Interviste immaginarie", "Storie vere di sopravvissute", "Un romanzo di fantasia"], "corretta": "B"}, {"n": 2, "titolo": "Always (film coreano, 2011)", "domanda": "Che genere ha principalmente il film?", "opzioni": ["Commedia demenziale", "Romantico drammatico", "Action thriller"], "corretta": "B"}, {"n": 3, "titolo": "Usagi Drop", "domanda": "Che scelta fa il protagonista riguardo alla bambina?", "opzioni": ["La affida a un orfanotrofio", "Decide di crescerla lui", "La lascia con un'altra parente"], "corretta": "B"}, {"n": 4, "titolo": "Better Days", "domanda": "Vero o Falso: il film ha vinto importanti premi asiatici.", "opzioni": ["Vero", "Falso"], "corretta": "A"}, {"n": 5, "titolo": "Nagisa ni Saku Hana", "domanda": "Vero o Falso: il film tratta anche temi LGBTQ+.", "opzioni": ["Vero", "Falso"], "corretta": "A"}, {"n": 6, "titolo": "Kokuho", "domanda": "Vero o Falso: il film è tratto da un romanzo.", "opzioni": ["Vero", "Falso"], "corretta": "A"}, {"n": 7, "titolo": "Hua Mulan (edizione Liu Chuxuan, 2020)", "domanda": "Chi è il generale che guadagna il rispetto di Mulan?", "opzioni": ["Generale Li Rong", "Generale Chu Lianhe", "Generale Zhang Hengrui"], "corretta": "A"}, {"n": 8, "titolo": "Upcoming Summer", "domanda": "Vero o Falso: il film è ambientato durante l'estate, dopo l'esame di maturità cinese (gaokao).", "opzioni": ["Vero", "Falso"], "corretta": "A"}]]};
+
+const GAME_DURATION = 270; // 4:30 in seconds
+const POINTS_PER_CORRECT = 10;
+const DIFFICULTY_BONUS = 20;
+const SPEED_BONUS_MAX = 40;
+
+let difficulty = null;
+let variant = [];
+let currentIndex = 0;
+let selectedOption = null;
+let correctCount = 0;
+let answers = []; // 'done' | 'wrong' | null per dot tracking
+let timeLeft = GAME_DURATION;
+let timerInterval = null;
+let gameActive = false;
+
+const quizBody = document.getElementById('quizBody');
+const qCounterEl = document.getElementById('qCounter');
+const timeDisplayEl = document.getElementById('timeDisplay');
+const timerbarEl = document.getElementById('timerbar');
+
+function chooseDifficulty(level){
+  difficulty = level;
+  const pool = QUIZ_DATA[level];
+  variant = pool[Math.floor(Math.random() * pool.length)];
+  document.getElementById('startOverlay').style.display = 'none';
+  currentIndex = 0;
+  correctCount = 0;
+  answers = new Array(variant.length).fill(null);
+  timeLeft = GAME_DURATION;
+  gameActive = true;
+  renderQuestion();
+  startTimer();
+}
+
+function startTimer(){
+  clearInterval(timerInterval);
+  updateTimerDisplay();
+  timerInterval = setInterval(() => {
+    timeLeft -= 0.1;
+    if(timeLeft <= 0){
+      timeLeft = 0;
+      updateTimerDisplay();
+      clearInterval(timerInterval);
+      finishQuiz(false);
+      return;
+    }
+    updateTimerDisplay();
+  }, 100);
+}
+
+function updateTimerDisplay(){
+  const secs = Math.max(timeLeft, 0);
+  const m = Math.floor(secs / 60);
+  const s = Math.floor(secs % 60);
+  timeDisplayEl.textContent = m + ':' + String(s).padStart(2,'0');
+  timerbarEl.style.width = (secs / GAME_DURATION * 100) + '%';
+}
+
+function renderQuestion(){
+  const q = variant[currentIndex];
+  selectedOption = null;
+  qCounterEl.textContent = (currentIndex + 1);
+
+  const optionsHtml = q.opzioni.map((opt, i) => {
+    const letter = String.fromCharCode(65 + i);
+    return `<div class="option" data-letter="${letter}" onclick="selectOption('${letter}')">
+      <div class="option-letter">${letter}</div>
+      <div>${opt}</div>
+    </div>`;
+  }).join('');
+
+  const dotsHtml = variant.map((_, i) => {
+    let cls = 'dot';
+    if(i === currentIndex) cls += ' current';
+    else if(answers[i] === 'done') cls += ' done';
+    else if(answers[i] === 'wrong') cls += ' wrong';
+    return `<div class="${cls}"></div>`;
+  }).join('');
+
+  quizBody.innerHTML = `
+    <div class="question-card">
+      <div class="q-meta">${q.titolo}</div>
+      <div class="q-text">${q.domanda}</div>
+      ${optionsHtml}
+      <button class="confirm-btn" id="confirmBtn" disabled onclick="confirmAnswer()">Conferma risposta</button>
+    </div>
+    <div class="progress-dots">${dotsHtml}</div>
+  `;
+}
+
+function selectOption(letter){
+  selectedOption = letter;
+  document.querySelectorAll('.option').forEach(el => {
+    el.classList.toggle('selected', el.dataset.letter === letter);
+  });
+  document.getElementById('confirmBtn').disabled = false;
+}
+
+function confirmAnswer(){
+  if(!selectedOption || !gameActive) return;
+  const q = variant[currentIndex];
+  const isCorrect = selectedOption === q.corretta;
+  answers[currentIndex] = isCorrect ? 'done' : 'wrong';
+  if(isCorrect) correctCount++;
+
+  currentIndex++;
+  if(currentIndex >= variant.length){
+    finishQuiz(true);
+  } else {
+    renderQuestion();
+  }
+}
+
+function finishQuiz(completed){
+  gameActive = false;
+  clearInterval(timerInterval);
+  let finalTotal = 0;
+
+  if(!completed){
+    quizBody.innerHTML = `
+      <div class="final-panel">
+        <div class="brand">Tempo scaduto</div>
+        <div class="final-score" style="color:var(--bad);">0<span> / ${difficulty === 'difficile' ? 140 : 120} punti</span></div>
+        <p style="color:var(--dim); font-size:13px; margin-top:8px;">Non hai risposto a tutte le domande in tempo. Questa missione va persa, si passa a quella successiva.</p>
+        <button class="confirm-final-btn" id="confirmFinalBtn">Conferma e invia i punti per il contest</button>
+        <p class="submitted-note" id="submittedNote">Punteggio inviato per il contest ✓</p>
+      </div>
+    `;
+  } else {
+    const basePoints = correctCount * POINTS_PER_CORRECT;
+    const diffBonus = difficulty === 'difficile' ? DIFFICULTY_BONUS : 0;
+    const speedBonus = Math.round(SPEED_BONUS_MAX * (timeLeft / GAME_DURATION));
+    finalTotal = basePoints + diffBonus + speedBonus;
+    const maxTotal = 80 + diffBonus + SPEED_BONUS_MAX;
+
+    quizBody.innerHTML = `
+      <div class="final-panel">
+        <div class="brand">Missione completata</div>
+        <div class="final-score">${finalTotal}<span> / ${maxTotal} punti</span></div>
+        <div class="final-breakdown">
+          <div>Risposte corrette<b>${correctCount} / 8</b></div>
+          <div>Punti base<b>${basePoints}</b></div>
+          ${diffBonus ? `<div>Bonus difficoltà<b>+${diffBonus}</b></div>` : ''}
+          <div>Bonus velocità<b>+${speedBonus}</b></div>
+        </div>
+        <button class="confirm-final-btn" id="confirmFinalBtn">Conferma e invia i punti per il contest</button>
+        <p class="submitted-note" id="submittedNote">Punteggio inviato per il contest ✓</p>
+      </div>
+    `;
+  }
+
+  document.getElementById('confirmFinalBtn').addEventListener('click', async () => {
+    const btn = document.getElementById('confirmFinalBtn');
+    const note = document.getElementById('submittedNote');
+    btn.disabled = true;
+    note.textContent = 'Invio in corso...';
+    note.classList.add('show');
+    try {
+      const newTotal = await submitMissionResult(currentUser.uid, MISSION_KEY, {
+        completed: completed,
+        points: finalTotal,
+        phrasePiece: true // segnalino generico: il testo reale del frammento viene scelto a caso solo nel Quizzone Finale
+      });
+      note.textContent = `Punteggio inviato per il contest ✓ — Punti totali contest: ${newTotal}`;
+      btn.style.display = 'none';
+      setTimeout(() => { window.location.href = '../dashboard.html'; }, 2000);
+    } catch(err){
+      console.error(err);
+      note.textContent = 'Errore durante l\'invio del punteggio. Riprova o contatta lo staff.';
+      btn.disabled = false;
+    }
+  });
+}
+</script>
+</body>
+</html>
